@@ -2,38 +2,31 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
-	
+
 	"github.com/gorilla/mux"
 )
 
 const port = ":3000"
 
-func handlerFunc(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-	switch r.URL.Path {
-	case "/":
-	case "/contact":
-	default:
-	}
-}
+var homeTemplate *template.Template
 
 func home(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, "<h1>Welcome to instaGO!</h1>")
-	
+	if err := homeTemplate.Execute(w, nil); err != nil {
+		panic(err)
+	}
 }
 
 func contact(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprint(w, "<p>Please send an email to <a href=#>support@instago.com</a></p>")
-	
 }
 
 func faq(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprint(w, "this is the FAQ page")
-	
 }
 
 func notFound(w http.ResponseWriter, r *http.Request) {
@@ -42,8 +35,12 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "<h1>404 Page not found</h1>")
 }
 
-
 func main() {
+	var err error
+	homeTemplate, err = template.ParseFiles("views/home.gohtml")
+	if err != nil {
+		panic(err)
+	}
 	r := mux.NewRouter()
 	r.HandleFunc("/", home)
 	r.HandleFunc("/contact", contact)
