@@ -2,9 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/julienschmidt/httprouter"
 	"net/http"
-	
-	"github.com/gorilla/mux"
 )
 
 const port = ":3000"
@@ -18,22 +17,22 @@ func handlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func home(w http.ResponseWriter, r *http.Request) {
+func home(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprint(w, "<h1>Welcome to instaGO!</h1>")
-	
+
 }
 
-func contact(w http.ResponseWriter, r *http.Request) {
+func contact(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprint(w, "<p>Please send an email to <a href=#>support@instago.com</a></p>")
-	
+
 }
 
-func faq(w http.ResponseWriter, r *http.Request) {
+func faq(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprint(w, "this is the FAQ page")
-	
+
 }
 
 func notFound(w http.ResponseWriter, r *http.Request) {
@@ -42,13 +41,12 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "<h1>404 Page not found</h1>")
 }
 
-
 func main() {
-	r := mux.NewRouter()
-	r.HandleFunc("/", home)
-	r.HandleFunc("/contact", contact)
-	r.HandleFunc("/faq", faq)
-	r.NotFoundHandler = http.HandlerFunc(notFound)
+	r := httprouter.New()
+	r.NotFound = http.HandlerFunc(notFound)
+	r.GET("/", home)
+	r.GET("/contact", contact)
+	r.GET("/faq", faq)
 	fmt.Println("Serving port", port)
 	http.ListenAndServe(port, r)
 }
