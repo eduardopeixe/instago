@@ -6,12 +6,14 @@ import (
 
 // NewView creates a view
 func NewView(files ...string) *View {
-	files = append(files, "viewa/layouts/footer.gohtml")
+	files = append(files, "views/layouts/footer.gohtml")
 
 	t, err := template.ParseFiles(files...)
 	if err != nil {
 		panic(err)
 	}
+
+	return &View{t}
 }
 
 //View is the type of a view
