@@ -1,19 +1,19 @@
 package views
 
 import (
-	"net/http"
 	"html/template"
+	"net/http"
 	"path/filepath"
 )
 
 const (
-	layoutDir = "views/layouts/"
-	templateExt = ".gohtml" 
+	layoutDir   = "views/layouts/"
+	templateExt = ".gohtml"
 )
 
 // NewView creates a view
 func NewView(layout string, files ...string) *View {
-	files = append(files, layouts()...) 
+	files = append(files, layouts()...)
 
 	t, err := template.ParseFiles(files...)
 	if err != nil {
@@ -35,7 +35,7 @@ func (v *View) Render(w http.ResponseWriter, data interface{}) error {
 }
 
 // layoutFile return a slice of strings representing the layout files
-func layouts()  []string {
+func layouts() []string {
 	files, err := filepath.Glob(layoutDir + "*" + templateExt)
 	if err != nil {
 		panic(err)
