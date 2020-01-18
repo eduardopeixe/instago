@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/eduardopeixe/instago/views"
-	"github.com/gorilla/schema"
 )
 
 // NewUsers creates a new Users controller. This functon will panic
@@ -38,14 +37,11 @@ type SignupForm struct {
 
 // Create is used to process the signup form
 func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
+
+	var form SignupForm
+	if err := ParseForm(r, &form); err != nil {
 		panic(err)
 	}
 
-	dec := schema.NewDecoder()
-	var form SignupForm
-	if err := dec.Decode(&form, r.PostForm); err != nil {
-		panic(err)
-	}
 	fmt.Fprintln(w, form)
 }
