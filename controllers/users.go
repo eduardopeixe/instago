@@ -1,9 +1,11 @@
 package controllers
 
 import (
-	"github.com/eduardopeixe/instago/views"
-	"net/http"
 	"fmt"
+	"net/http"
+
+	"github.com/eduardopeixe/instago/views"
+	"github.com/gorilla/schema"
 )
 
 // NewUsers creates a new Users controller. This functon will panic
@@ -28,7 +30,22 @@ func (u *Users) New(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// SignupForm is the model for signup form
+type SignupForm struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 // Create is used to process the signup form
 func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Create new user")
+	if err := r.ParseForm(); err != nil {
+		panic(err)
+	}
+
+	dec := schema.NewDecoder()
+	var form SignupForm
+	if err := dec.Decode(&form, r.PostForm); err != nil {
+		panic(err)
+	}
+	fmt.Fprintln(w, form)
 }
