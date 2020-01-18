@@ -1,8 +1,9 @@
 package controllers
 
 import (
-	"net/http"
 	"github.com/eduardopeixe/instago/views"
+	"net/http"
+	"fmt"
 )
 
 // NewUsers creates a new Users controller. This functon will panic
@@ -20,9 +21,14 @@ type Users struct {
 }
 
 // New creates a new user view
-func (u *Users)  New(w http.ResponseWriter, r *http.Request) {
+func (u *Users) New(w http.ResponseWriter, r *http.Request) {
 	err := u.NewView.Render(w, nil)
 	if err != nil {
 		panic(err)
 	}
+}
+
+// Create is used to process the signup form
+func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Create new user")
 }
