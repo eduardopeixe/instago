@@ -25,33 +25,20 @@ func main() {
 
 	defer db.Close()
 
-	type User struct {
-		ID    int
-		Name  string
-		Email string
-	}
-
-	var users []User
-
-	rows, err := db.Query(`
-		select id, name, email from users`)
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var user User
-		err := rows.Scan(&user.ID, &user.Name, &user.Email)
-
-		users = append(users, user)
+	for i := 1; i < 6; i++ {
+		user := 1
+		if i > 2 {
+			user = 2
+		}
+		amount := i * 13
+		description := fmt.Sprintf("processor XYZ%d", amount)
+		_, err := db.Exec(`
+		insert into orders(user_id, amount, description) 
+		VALUES($1, $2, $3)`,
+			user, amount, description)
 		if err != nil {
 			panic(err)
 		}
 	}
-
-	if rows.Err() != nil {
-		fmt.Println("This is rows.Err()")
-	}
-
-	fmt.Println(users)
 
 }
