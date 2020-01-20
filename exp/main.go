@@ -25,20 +25,26 @@ func main() {
 
 	defer db.Close()
 
-	for i := 1; i < 6; i++ {
-		user := 1
-		if i > 2 {
-			user = 2
-		}
-		amount := i * 13
-		description := fmt.Sprintf("processor XYZ%d", amount)
-		_, err := db.Exec(`
-		insert into orders(user_id, amount, description) 
-		VALUES($1, $2, $3)`,
-			user, amount, description)
-		if err != nil {
+	rows, err := db.Query(`
+	select * from users
+	inner join orders On users.id = orders.user_id
+	`)
+	if err != nil {
+		panic(err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var userID, orderID, amount int
+		var name, email, description string
+		if err := rows.Scan(&userID, &name, &email, &orderID, &userID, &amount, &description); err != nil {
 			panic(err)
 		}
+	}
+
+	if rows.Err() != nil {
+		fmt.Println(rows.Err())
 	}
 
 }
