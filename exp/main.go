@@ -25,16 +25,33 @@ func main() {
 
 	defer db.Close()
 
-	var id int
-	var name, email string
-
-	row := db.QueryRow(`
-		select id, name, email from users where id =$1`, 1)
-
-	if err := row.Scan(&id, &name, &email); err != nil {
-		panic(err)
+	type User struct {
+		ID    int
+		Name  string
+		Email string
 	}
 
-	fmt.Println("The new ID is", id)
+	var users []User
+
+	rows, err := db.Query(`
+		select id, name, email from users`)
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.ID, &user.Name, &user.Email)
+
+		users = append(users, user)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if rows.Err() != nil {
+		fmt.Println("This is rows.Err()")
+	}
+
+	fmt.Println(users)
 
 }
