@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -38,31 +35,17 @@ func main() {
 	db.LogMode(true)
 	db.AutoMigrate(&User{})
 
-	name, email, color := getInfo()
-	u := User{
-		Name:  name,
-		Email: email,
-		Color: color,
+	var newUser User
+
+	var u User = User{
+		Name:  "john",
+		Email: "john@smith.com",
 	}
-	if err = db.Create(&u).Error; err != nil {
-		panic(err)
-	}
-	fmt.Printf("%+v\n", u)
-}
+	db.Where(u).First(&u) //returns where a user.name == u.Name and user.email == u.Email
+	fmt.Println(u)
+	db.First(&newUser) // returns first record PK ascending
+	fmt.Println(newUser)
+	db.Last(&newUser) // returns first record PK descending
+	fmt.Println(newUser)
 
-func getInfo() (name, email, color string) {
-
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("what is your name?")
-	name, _ = reader.ReadString('\n')
-	fmt.Println("What is your email address?")
-	email, _ = reader.ReadString('\n')
-	fmt.Println("What is your favorite color?")
-	color, _ = reader.ReadString('\n')
-
-	name = strings.TrimSpace(name)
-	email = strings.TrimSpace(email)
-	color = strings.TrimSpace(color)
-
-	return name, email, color
 }
