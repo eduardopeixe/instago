@@ -35,17 +35,9 @@ func main() {
 	db.LogMode(true)
 	db.AutoMigrate(&User{})
 
-	var newUser User
+	var users []User
 
-	var u User = User{
-		Name:  "john",
-		Email: "john@smith.com",
-	}
-	db.Where(u).First(&u) //returns where a user.name == u.Name and user.email == u.Email
-	fmt.Println(u)
-	db.First(&newUser) // returns first record PK ascending
-	fmt.Println(newUser)
-	db.Last(&newUser) // returns first record PK descending
-	fmt.Println(newUser)
-
+	db.Find(&users)
+	fmt.Println(len(users))
+	fmt.Println(users)
 }
