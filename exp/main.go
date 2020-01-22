@@ -16,9 +16,17 @@ const (
 
 type User struct {
 	gorm.Model
-	Name  string
-	Email string `gorm:"not null;unique_index"`
-	Color string
+	Name   string
+	Email  string `gorm:"not null;unique_index"`
+	Color  string
+	Orders []Order
+}
+
+type Order struct {
+	gorm.Model
+	UserID      uint
+	Amount      int
+	Description string
 }
 
 func main() {
@@ -33,21 +41,31 @@ func main() {
 	defer db.Close()
 
 	db.LogMode(true)
-	db.AutoMigrate(&User{})
+	db.AutoMigrate(&User{}, &Order{})
 
-	var user User
-
-	err = db.Where("email = ?", "no@existing.email").First(&user).Error
-	if err != nil {
-		switch err {
-		case gorm.ErrRecordNotFound:
-			fmt.Println("No user found!")
-		case gorm.ErrInvalidSQL:
-			fmt.Println("Invalid SQL command")
-		default:
-			fmt.Println("Database error", err)
-		}
+	var u User
+	if err := db.First(&u).Error; err != nil {
+		panic(err)
 	}
 
-	fmt.Println(user)
+	err = createOrder(db, u, 1199, "Description #1")
+	if err != nil {
+		panic(err)
+	}
+	err = createOrder(db, u, 999, "Description #2")
+	if err != nil {
+		panic(err)
+	}
+	err = createOrder(db, u, 4999, "Description #3")
+	if err != nil {
+		panic(err)
+	}
+}
+
+func createOrder(db *gorm.DB, user User, amount int, desc string) error {
+	return db.Create(&Order{
+		UserID:      user.ID,
+		Amount:      amount,
+		Description: desc,
+	}).Error
 }
