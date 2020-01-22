@@ -35,9 +35,19 @@ func main() {
 	db.LogMode(true)
 	db.AutoMigrate(&User{})
 
-	var users []User
+	var user User
 
-	db.Find(&users)
-	fmt.Println(len(users))
-	fmt.Println(users)
+	err = db.Where("email = ?", "no@existing.email").First(&user).Error
+	if err != nil {
+		switch err {
+		case gorm.ErrRecordNotFound:
+			fmt.Println("No user found!")
+		case gorm.ErrInvalidSQL:
+			fmt.Println("Invalid SQL command")
+		default:
+			fmt.Println("Database error", err)
+		}
+	}
+
+	fmt.Println(user)
 }
