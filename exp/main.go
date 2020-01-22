@@ -44,22 +44,11 @@ func main() {
 	db.AutoMigrate(&User{}, &Order{})
 
 	var u User
-	if err := db.First(&u).Error; err != nil {
+	if err := db.Preload("Orders").First(&u).Error; err != nil {
 		panic(err)
 	}
 
-	err = createOrder(db, u, 1199, "Description #1")
-	if err != nil {
-		panic(err)
-	}
-	err = createOrder(db, u, 999, "Description #2")
-	if err != nil {
-		panic(err)
-	}
-	err = createOrder(db, u, 4999, "Description #3")
-	if err != nil {
-		panic(err)
-	}
+	fmt.Println(u)
 }
 
 func createOrder(db *gorm.DB, user User, amount int, desc string) error {
