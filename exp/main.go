@@ -24,13 +24,16 @@ func main() {
 	}
 
 	defer us.Close()
-	us.ResetDB()
+	// us.ResetDB()
 
-	// user, err := us.ByID(1)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
+	user := models.User{
+		Name:  "User Create 2",
+		Email: "email2@usercreate.com",
+	}
+	err = us.Create(&user)
+	if err != nil {
+		panic(err)
+	}
 	fmt.Println(user)
 
 }
