@@ -99,5 +99,12 @@ func (us *UserService) Close() error {
 func (us *UserService) ResetDB() {
 	us.db.DropTableIfExists(&User{})
 	us.db.AutoMigrate(&User{})
+}
 
+// Automigrate migrates users table
+func (us *UserService) AutoMigrate() error {
+	if err := us.db.AutoMigrate(&User{}).Error; err != nil {
+		return err
+	}
+	return nil
 }
