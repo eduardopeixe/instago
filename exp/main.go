@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/eduardopeixe/instago/models"
 
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -24,16 +25,42 @@ func main() {
 	}
 
 	defer us.Close()
-	// us.ResetDB()
+	us.ResetDB()
 
 	user := models.User{
-		Name:  "User Create 2",
+		Name:  "User Create 1",
 		Email: "email2@usercreate.com",
 	}
+
 	err = us.Create(&user)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(user)
+
+	userByID, err := us.ByID(user.ID)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("user created", userByID)
+	}
+
+	user.Email = "update@mail.com"
+	err = us.Update(&user)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	userByID, err = us.ByID(user.ID)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = us.Delete(user.ID)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	userByID, err = us.ByID(user.ID)
+	fmt.Println("User delete", err)
 
 }
