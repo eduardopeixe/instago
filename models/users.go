@@ -5,20 +5,29 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"golang.org/x/crypto/bcrypt"
 )
+
+const userPwPepper = "secret-instago-string"
 
 var (
 	// ErrNotFound is a generic error for resource not found
 	ErrNotFound = errors.New("models: resource not found")
-	// ErrInvalidID returns error when a invalid ID is provided
+	// ErrInvalidID returns error when an invalid ID is provided
 	ErrInvalidID = errors.New("models: invalid ID")
+	// ErrInvalidEmail returns error when an invalid email is provided
+	ErrInvalidEmail = errors.New("models: invalid email address")
+	// ErrIncorrectPassword returns error when a invalid password is provided
+	ErrIncorrectPassword = errors.New("models: incorrect password provided")
 )
 
 // User is the model for a user
 type User struct {
 	gorm.Model
-	Name  string
-	Email string `gorm:"not null;unique_index"`
+	Name         string
+	Email        string `gorm:"not null;unique_index"`
+	Password     string `gorm:"-"`
+	PasswordHash string `gorm:"not null"`
 }
 
 // UserService is the type to connect to a DB
@@ -58,6 +67,25 @@ func (us *UserService) ByEmail(email string) (*User, error) {
 	return &user, err
 }
 
+//Authenticate a user with provided email and password
+func (us *UserService) Authenticate(email, password string) (*User, error) {
+	foundUser, err := us.ByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(foundUser.PasswordHash), []byte(password+userPwPepper))
+	if err != nil {
+		switch err {
+		case bcrypt.ErrMismatchedHashAndPassword:
+			return nil, ErrIncorrectPassword
+		default:
+			return nil, err
+		}
+	}
+	return foundUser, nil
+}
+
 // first will query provided gorm.db and get the first item
 // returned an place it into dst interface
 func first(db *gorm.DB, dst interface{}) error {
@@ -66,11 +94,19 @@ func first(db *gorm.DB, dst interface{}) error {
 		return ErrNotFound
 	}
 	return err
-
 }
 
 // Create creates the provided user
 func (us *UserService) Create(user *User) error {
+	pwBytes := []byte(user.Password + userPwPepper)
+	hashedBytes, err := bcrypt.GenerateFromPassword(pwBytes, bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	user.PasswordHash = string(hashedBytes)
+	user.Password = ""
+
 	return us.db.Create(user).Error
 }
 

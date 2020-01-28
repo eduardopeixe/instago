@@ -13,15 +13,17 @@ import (
 // during the initial setup
 func NewUsers(us *models.UserService) *Users {
 	return &Users{
-		NewView: views.NewView("bootstrap", "users/new"),
-		us:      us,
+		NewView:   views.NewView("bootstrap", "users/new"),
+		LoginView: views.NewView("bootstrap", "users/login"),
+		us:        us,
 	}
 }
 
 // Users is the type of users
 type Users struct {
-	NewView *views.View
-	us      *models.UserService
+	NewView   *views.View
+	LoginView *views.View
+	us        *models.UserService
 }
 
 // New creates a new user view
@@ -34,7 +36,7 @@ func (u *Users) New(w http.ResponseWriter, r *http.Request) {
 
 // SignupForm is the model for signup form
 type SignupForm struct {
-	Name     string `json:"username"`
+	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -43,12 +45,13 @@ type SignupForm struct {
 func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 
 	var form SignupForm
-	if err := ParseForm(r, &form); err != nil {
+	if err := parseForm(r, &form); err != nil {
 		panic(err)
 	}
 	user := models.User{
-		Name:  form.Name,
-		Email: form.Email,
+		Name:     form.Name,
+		Email:    form.Email,
+		Password: form.Password,
 	}
 
 	err := u.us.Create(&user)
@@ -56,5 +59,33 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintln(w, form)
+	fmt.Fprintln(w, user)
+}
+
+type LoginForm struct {
+	Email    string `schema:"email"`
+	Password string `schema:"password" `
+}
+
+// Login us used to verify te provided emai addresss and password are
+// valid to login
+func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
+
+	form := LoginForm{}
+	err := parseForm(r, &form)
+	if err != nil {
+		panic(err)
+	}
+
+	user, err := u.us.Authenticate(form.Email, form.Password)
+	switch err {
+	case models.ErrNotFound:
+		fmt.Fprintln(w, "Invalid email address")
+	case models.ErrIncorrectPassword:
+		fmt.Fprintln(w, "Incorrect password provided")
+	case nil:
+		fmt.Fprintln(w, user)
+	default:
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
