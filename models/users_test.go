@@ -36,8 +36,12 @@ func TestCreateUser(t *testing.T) {
 	}
 
 	user := User{
-		Name:  "User name",
-		Email: "User email",
+		Name:         "User name",
+		Email:        "User email",
+		Password:     "Password",
+		PasswordHash: "",
+		Remember:     "token-remember-string",
+		RememberHash: "",
 	}
 
 	err = us.Create(&user)

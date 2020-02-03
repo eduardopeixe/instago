@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/eduardopeixe/instago/models"
+	"github.com/eduardopeixe/instago/rand"
 	"github.com/eduardopeixe/instago/views"
 )
 
@@ -59,7 +60,12 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	signIn(w, &user)
+	err = u.signIn(w, &user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	http.Redirect(w, r, "/cookietest", http.StatusFound)
 }
 
@@ -90,27 +96,49 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	signIn(w, user)
-	http.Redirect(w, r, "/cookietest", http.StatusFound)
-}
-
-func signIn(w http.ResponseWriter, user *models.User) {
-	cookie := http.Cookie{
-		Name:  "email",
-		Value: user.Email,
-	}
-
-	http.SetCookie(w, &cookie)
-
-}
-
-// CookieTest is used to display cookies set on the current user
-func (u *Users) CookieTest(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("email")
+	err = u.signIn(w, user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintln(w, "Email is:", cookie.Value)
-	fmt.Fprintln(w, cookie)
+	http.Redirect(w, r, "/cookietest", http.StatusFound)
+}
+
+func (u *Users) signIn(w http.ResponseWriter, user *models.User) error {
+	if user.Remember == "" {
+		token, err := rand.RememberToken()
+		if err != nil {
+			return err
+		}
+		user.Remember = token
+		err = u.us.Update(user)
+		if err != nil {
+			return err
+		}
+	}
+	cookie := http.Cookie{
+		Name:  "remember_token",
+		Value: user.Remember,
+	}
+
+	http.SetCookie(w, &cookie)
+
+	return nil
+}
+
+// CookieTest is used to display cookies set on the current user
+func (u *Users) CookieTest(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("remember_token")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	user, err := u.us.ByRemember(cookie.Value)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintln(w, "remember is:", cookie.Value)
+	fmt.Fprintln(w, user)
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/eduardopeixe/instago/hash"
+	"github.com/eduardopeixe/instago/rand"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"golang.org/x/crypto/bcrypt"
@@ -78,10 +79,10 @@ func (us *UserService) ByEmail(email string) (*User, error) {
 
 // ByRemember looks up a user with the given remember token
 // and return that user
-func (us *UserService) ByRemember(token string) (*User, error){
+func (us *UserService) ByRemember(token string) (*User, error) {
 	var user User
 	rememberHash := us.hmac.Hash(token)
-	err := first(us.db.Where("remember_hash" = ?, rememberHash), &user)
+	err := first(us.db.Where("remember_hash = ?", rememberHash), &user)
 	if err != nil {
 		return nil, err
 	}
