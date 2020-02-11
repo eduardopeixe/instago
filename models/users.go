@@ -41,40 +41,22 @@ type userValidator struct {
 	UserDB
 }
 
-func (uv *userValidator) ByID(id uint) (*User, error) {
-	//validate the ID
-	if id <= 0 {
-		return nil, errors.New("Invalid ID")
-	}
-	return uv.UserDB.ByID(id)
-}
-
-func newuserGorm(connectionInfo string) (*userGorm, error) {
-	db, err := gorm.Open("postgres", connectionInfo)
-	if err != nil {
-		return nil, err
-	}
-
-	db.LogMode(true)
-
-	hmac := hash.NewHMAC(hmacSecretKey)
-
-	return &userGorm{
-		db:   db,
-		hmac: hmac,
-	}, nil
-}
-
-// UserService is the type to connect to a DB
-type UserService struct {
-	UserDB
-}
-
-var _ UserDB = &userGorm{}
-
 type userGorm struct {
 	db   *gorm.DB
 	hmac hash.HMAC
+}
+
+type userService struct {
+	UserDB
+}
+
+// UserService is a set of methods used to manipulate and work with the user model
+type UserService interface {
+	// Authenticate will verify the provided email and password and
+	// if correct the user corresponding to that email will be return.
+	// Otherwise returns an error.
+	Authenticate(email, password string) (*User, error)
+	UserDB
 }
 
 // UserDB is used to interact with the users database
@@ -104,14 +86,40 @@ type UserDB interface {
 	DestructiveReset()
 }
 
+var _ UserDB = &userGorm{}
+
+func (uv *userValidator) ByID(id uint) (*User, error) {
+	//validate the ID
+	if id <= 0 {
+		return nil, errors.New("Invalid ID")
+	}
+	return uv.UserDB.ByID(id)
+}
+
+func newuserGorm(connectionInfo string) (*userGorm, error) {
+	db, err := gorm.Open("postgres", connectionInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	db.LogMode(true)
+
+	hmac := hash.NewHMAC(hmacSecretKey)
+
+	return &userGorm{
+		db:   db,
+		hmac: hmac,
+	}, nil
+}
+
 // NewUserService creates a new DB connection
-func NewUserService(connectionInfo string) (*UserService, error) {
+func NewUserService(connectionInfo string) (UserService, error) {
 	ug, err := newuserGorm(connectionInfo)
 	if err != nil {
 		return nil, err
 	}
 
-	return &UserService{UserDB: &userValidator{UserDB: ug}}, nil
+	return &userService{UserDB: &userValidator{UserDB: ug}}, nil
 }
 
 // ByID will look a user with theprovided ID
@@ -147,7 +155,7 @@ func (ug *userGorm) ByRemember(token string) (*User, error) {
 }
 
 //Authenticate a user with provided email and password
-func (us *UserService) Authenticate(email, password string) (*User, error) {
+func (us *userService) Authenticate(email, password string) (*User, error) {
 	foundUser, err := us.ByEmail(email)
 	if err != nil {
 		return nil, err

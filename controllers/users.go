@@ -12,7 +12,7 @@ import (
 // NewUsers creates a new Users controller. This functon will panic
 // if the templates are not passed correctly, and should only be used
 // during the initial setup
-func NewUsers(us *models.UserService) *Users {
+func NewUsers(us models.UserService) *Users {
 	return &Users{
 		NewView:   views.NewView("bootstrap", "users/new"),
 		LoginView: views.NewView("bootstrap", "users/login"),
@@ -24,7 +24,7 @@ func NewUsers(us *models.UserService) *Users {
 type Users struct {
 	NewView   *views.View
 	LoginView *views.View
-	us        *models.UserService
+	us        models.UserService
 }
 
 // New creates a new user view
