@@ -166,6 +166,13 @@ func (uv *userValidator) SetRemember(user *User) error {
 	return nil
 }
 
+func (uv *userValidator) IDGreaterThanZero(user *User) error {
+	if user.ID <= 0 {
+		return ErrInvalidID
+	}
+	return nil
+}
+
 // ByRemember will hash the remeber token and then call ByRemember
 // on the subsequent UserDB layer
 func (uv *userValidator) ByRemember(token string) (*User, error) {
@@ -209,8 +216,11 @@ func (uv *userValidator) Update(user *User) error {
 
 // Delete updates a provided user with user data provided
 func (uv *userValidator) Delete(id uint) error {
-	if id == 0 {
-		return ErrInvalidID
+	var user User
+	user.ID = id
+	err := runUserValFuncs(&user, uv.IDGreaterThanZero)
+	if err != nil {
+		return err
 	}
 
 	return uv.UserDB.Delete(id)
