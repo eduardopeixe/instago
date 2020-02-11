@@ -27,7 +27,7 @@ func main() {
 
 	must(err)
 	defer us.Close()
-	us.ResetDB()
+	us.DestructiveReset()
 	us.AutoMigrate()
 
 	staticC := controllers.NewStatic()
