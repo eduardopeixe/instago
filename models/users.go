@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/eduardopeixe/instago/hash"
 	"github.com/eduardopeixe/instago/rand"
@@ -173,6 +174,24 @@ func (uv *userValidator) IDGreaterThanZero(user *User) error {
 	return nil
 }
 
+func (uv *userValidator) normalizeEmail(user *User) error {
+	user.Email = strings.ToLower(user.Email)
+	user.Email = strings.TrimSpace(user.Email)
+	return nil
+
+}
+
+func (uv *userValidator) ByEmail(email string) (*User, error) {
+	user := User{
+		Email: email,
+	}
+	err := runUserValFuncs(&user, uv.normalizeEmail)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 // ByRemember will hash the remeber token and then call ByRemember
 // on the subsequent UserDB layer
 func (uv *userValidator) ByRemember(token string) (*User, error) {
@@ -194,7 +213,9 @@ func (uv *userValidator) Create(user *User) error {
 	err := runUserValFuncs(user,
 		uv.bcryptPassword,
 		uv.SetRemember,
-		uv.hmacRemember)
+		uv.hmacRemember,
+		uv.normalizeEmail,
+	)
 	if err != nil {
 		return err
 	}
@@ -206,6 +227,7 @@ func (uv *userValidator) Create(user *User) error {
 func (uv *userValidator) Update(user *User) error {
 	err := runUserValFuncs(user,
 		uv.bcryptPassword,
+		uv.normalizeEmail,
 		uv.hmacRemember)
 	if err != nil {
 		return err
@@ -218,7 +240,10 @@ func (uv *userValidator) Update(user *User) error {
 func (uv *userValidator) Delete(id uint) error {
 	var user User
 	user.ID = id
-	err := runUserValFuncs(&user, uv.IDGreaterThanZero)
+	err := runUserValFuncs(&user,
+		uv.IDGreaterThanZero,
+		uv.normalizeEmail,
+	)
 	if err != nil {
 		return err
 	}
