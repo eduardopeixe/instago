@@ -34,11 +34,20 @@ func (u *Users) New(w http.ResponseWriter, r *http.Request) {
 		Message string
 	}
 
+	type Data struct {
+		Alert Alert
+		Yeld  interface{}
+	}
+
 	a := Alert{
 		"success",
 		"success to test alert",
 	}
-	err := u.NewView.Render(w, a)
+	d := Data{
+		a,
+		"hello!",
+	}
+	err := u.NewView.Render(w, d)
 	if err != nil {
 		panic(err)
 	}

@@ -26,8 +26,10 @@
         {{template "navbar"}}
 
         <div class="container-fluid">
-            {{template "alert" .}}
-            {{template "yield" .}}
+            {{if .Alert}}
+                {{template "alert" .Alert}}
+            {{end}}
+            {{template "yield" .Yeld}}
             {{template "footer"}}
         </div>
 
