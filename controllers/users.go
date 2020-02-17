@@ -29,7 +29,16 @@ type Users struct {
 
 // New creates a new user view
 func (u *Users) New(w http.ResponseWriter, r *http.Request) {
-	err := u.NewView.Render(w, nil)
+	type Alert struct {
+		Level   string
+		Message string
+	}
+
+	a := Alert{
+		"success",
+		"success to test alert",
+	}
+	err := u.NewView.Render(w, a)
 	if err != nil {
 		panic(err)
 	}
