@@ -32,6 +32,12 @@ var (
 	ErrEmailInvalid = errors.New("models: email address is invalid")
 	//ErrEmailTaken when a user with same email already exists
 	ErrEmailTaken = errors.New("models: email address is already taken")
+	//ErrPasswordTooShort when a password's length is not enough
+	ErrPasswordTooShort = errors.New("models: password must be at least 8 characters long")
+	//ErrPasswordRequired when a password is not present
+	ErrPasswordRequired = errors.New("models: password is required")
+	//ErrPasswordHashRequired when a password is not present
+	ErrPasswordHashRequired = errors.New("models: password hash not present")
 )
 
 // User is the model for a user
@@ -162,6 +168,27 @@ func (uv *userValidator) bcryptPassword(user *User) error {
 	return nil
 }
 
+func (uv *userValidator) passwordMinLength(user *User) error {
+	if user.Password != "" && len(user.Password) < 8 {
+		return ErrPasswordTooShort
+	}
+	return nil
+}
+
+func (uv *userValidator) passwordRequired(user *User) error {
+	if user.Password == "" {
+		return ErrPasswordRequired
+	}
+	return nil
+}
+
+func (uv *userValidator) passwordHashRequired(user *User) error {
+	if user.PasswordHash == "" {
+		return ErrPasswordHashRequired
+	}
+	return nil
+}
+
 func (uv *userValidator) hmacRemember(user *User) error {
 	if user.Remember == "" {
 		return nil
@@ -266,7 +293,10 @@ func (uv *userValidator) Create(user *User) error {
 		uv.requireEmail,
 		uv.emailFormat,
 		uv.emailIsAvailable,
+		uv.passwordRequired,
+		uv.passwordMinLength,
 		uv.bcryptPassword,
+		uv.passwordHashRequired,
 		uv.SetRemember,
 		uv.hmacRemember,
 	)
@@ -281,6 +311,7 @@ func (uv *userValidator) Create(user *User) error {
 func (uv *userValidator) Update(user *User) error {
 	err := runUserValFuncs(user,
 		uv.bcryptPassword,
+		uv.passwordHashRequired,
 		uv.normalizeEmail,
 		uv.requireEmail,
 		uv.hmacRemember,
