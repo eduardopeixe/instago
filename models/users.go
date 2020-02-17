@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"regexp"
 	"strings"
 
 	"github.com/eduardopeixe/instago/hash"
@@ -25,6 +26,10 @@ var (
 	ErrInvalidEmail = errors.New("models: invalid email address")
 	// ErrIncorrectPassword returns error when a invalid password is provided
 	ErrIncorrectPassword = errors.New("models: incorrect password provided")
+	//ErrEmailRequired return error when an email is not present
+	ErrEmailRequired = errors.New("models: email address is required")
+	//ErrEmailInvalid returns error when email is not in the correct format
+	ErrEmailInvalid = errors.New("models: email address is invalid")
 )
 
 // User is the model for a user
@@ -38,9 +43,22 @@ type User struct {
 	RememberHash string `gorm:"not null,unique_index"`
 }
 
+func newUserValidator(udb UserDB, hmac hash.HMAC) *userValidator {
+	return &userValidator{
+		UserDB: udb,
+		hmac:   hmac,
+		// This is not the best design because the program could panic
+		// when creating a new UserValidator
+		// having this in the global scope would make panic at starting it
+		// the program
+		emailRegex: regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z{2,16}$`),
+	}
+}
+
 type userValidator struct {
 	UserDB
-	hmac hash.HMAC
+	hmac       hash.HMAC
+	emailRegex *regexp.Regexp
 }
 
 type userGorm struct {
@@ -182,7 +200,14 @@ func (uv *userValidator) normalizeEmail(user *User) error {
 
 func (uv *userValidator) requireEmail(user *User) error {
 	if user.Email == "" {
-		return errors.New("email address is required")
+		return ErrEmailRequired
+	}
+	return nil
+}
+
+func (uv *userValidator) emailFormat(user *User) error {
+	if user.Email != "" && !uv.emailRegex.MatchString(user.Email) {
+		return ErrEmailInvalid
 	}
 	return nil
 }
@@ -191,7 +216,10 @@ func (uv *userValidator) ByEmail(email string) (*User, error) {
 	user := User{
 		Email: email,
 	}
-	err := runUserValFuncs(&user, uv.normalizeEmail)
+	err := runUserValFuncs(&user,
+		uv.normalizeEmail,
+		uv.emailFormat,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -222,6 +250,7 @@ func (uv *userValidator) Create(user *User) error {
 		uv.hmacRemember,
 		uv.normalizeEmail,
 		uv.requireEmail,
+		uv.emailFormat,
 	)
 	if err != nil {
 		return err
