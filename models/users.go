@@ -20,16 +20,18 @@ const (
 var (
 	// ErrNotFound is a generic error for resource not found
 	ErrNotFound = errors.New("models: resource not found")
-	// ErrInvalidID returns error when an invalid ID is provided
+	// ErrInvalidID when an invalid ID is provided
 	ErrInvalidID = errors.New("models: invalid ID")
-	// ErrInvalidEmail returns error when an invalid email is provided
+	// ErrInvalidEmail when an invalid email is provided
 	ErrInvalidEmail = errors.New("models: invalid email address")
-	// ErrIncorrectPassword returns error when a invalid password is provided
+	// ErrIncorrectPassword when a invalid password is provided
 	ErrIncorrectPassword = errors.New("models: incorrect password provided")
-	//ErrEmailRequired return error when an email is not present
+	//ErrEmailRequired when an email is not present
 	ErrEmailRequired = errors.New("models: email address is required")
-	//ErrEmailInvalid returns error when email is not in the correct format
+	//ErrEmailInvalid when email is not in the correct format
 	ErrEmailInvalid = errors.New("models: email address is invalid")
+	//ErrEmailTaken when a user with same email already exists
+	ErrEmailTaken = errors.New("models: email address is already taken")
 )
 
 // User is the model for a user
@@ -51,7 +53,7 @@ func newUserValidator(udb UserDB, hmac hash.HMAC) *userValidator {
 		// when creating a new UserValidator
 		// having this in the global scope would make panic at starting it
 		// the program
-		emailRegex: regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z{2,16}$`),
+		emailRegex: regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,16}$`),
 	}
 }
 
@@ -128,10 +130,7 @@ func NewUserService(connectionInfo string) (UserService, error) {
 	}
 
 	hmac := hash.NewHMAC(hmacSecretKey)
-	uv := &userValidator{
-		hmac:   hmac,
-		UserDB: ug,
-	}
+	uv := newUserValidator(ug, hmac)
 
 	return &userService{UserDB: uv}, nil
 }
@@ -212,6 +211,24 @@ func (uv *userValidator) emailFormat(user *User) error {
 	return nil
 }
 
+func (uv *userValidator) emailIsAvailable(user *User) error {
+	existing, err := uv.ByEmail(user.Email)
+	if err == ErrNotFound {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	// In case the user is found and the userID is a match, that means
+	// it is an update, so return nil
+	if user.ID == existing.ID {
+		return nil
+	} else {
+		return ErrEmailTaken
+	}
+}
+
 func (uv *userValidator) ByEmail(email string) (*User, error) {
 	user := User{
 		Email: email,
@@ -245,12 +262,13 @@ func (uv *userValidator) ByRemember(token string) (*User, error) {
 func (uv *userValidator) Create(user *User) error {
 
 	err := runUserValFuncs(user,
-		uv.bcryptPassword,
-		uv.SetRemember,
-		uv.hmacRemember,
 		uv.normalizeEmail,
 		uv.requireEmail,
 		uv.emailFormat,
+		uv.emailIsAvailable,
+		uv.bcryptPassword,
+		uv.SetRemember,
+		uv.hmacRemember,
 	)
 	if err != nil {
 		return err
@@ -265,7 +283,8 @@ func (uv *userValidator) Update(user *User) error {
 		uv.bcryptPassword,
 		uv.normalizeEmail,
 		uv.requireEmail,
-		uv.hmacRemember)
+		uv.hmacRemember,
+		uv.emailIsAvailable)
 	if err != nil {
 		return err
 	}
