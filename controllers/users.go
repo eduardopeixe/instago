@@ -89,25 +89,29 @@ type LoginForm struct {
 // Login us used to verify te provided emai addresss and password are
 // valid to login
 func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
-
+	log.Println("aqui")
+	vd := views.Data{}
 	form := LoginForm{}
 	err := parseForm(r, &form)
 	if err != nil {
-		panic(err)
+		log.Println(err)
+		vd.SetAlert(err)
+		u.LoginView.Render(w, vd)
+		return
 	}
-
+	log.Println("authenticate")
 	user, err := u.us.Authenticate(form.Email, form.Password)
 	if err != nil {
 		switch err {
 		case models.ErrNotFound:
-			fmt.Fprintln(w, "Invalid email address")
-		case models.ErrIncorrectPassword:
-			fmt.Fprintln(w, "Incorrect password provided")
+			vd.AlertError("Invalid email address")
 		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			vd.SetAlert(err)
 		}
+		u.LoginView.Render(w, vd)
+		return
 	}
-
+	log.Println("signin")
 	err = u.signIn(w, user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

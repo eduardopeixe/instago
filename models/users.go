@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"log"
 	"regexp"
 	"strings"
 
@@ -15,29 +16,6 @@ import (
 const (
 	userPwPepper  = "secret-instago-string"
 	hmacSecretKey = "secret-hmac-key"
-)
-
-var (
-	// ErrNotFound is a generic error for resource not found
-	ErrNotFound = errors.New("models: resource not found")
-	// ErrInvalidID when an invalid ID is provided
-	ErrInvalidID = errors.New("models: invalid ID")
-	// ErrInvalidEmail when an invalid email is provided
-	ErrInvalidEmail = errors.New("models: invalid email address")
-	// ErrIncorrectPassword when a invalid password is provided
-	ErrIncorrectPassword = errors.New("models: incorrect password provided")
-	//ErrEmailRequired when an email is not present
-	ErrEmailRequired = errors.New("models: email address is required")
-	//ErrEmailInvalid when email is not in the correct format
-	ErrEmailInvalid = errors.New("models: email address is invalid")
-	//ErrEmailTaken when a user with same email already exists
-	ErrEmailTaken = errors.New("models: email address is already taken")
-	//ErrPasswordTooShort when a password's length is not enough
-	ErrPasswordTooShort = errors.New("models: password must be at least 8 characters long")
-	//ErrPasswordRequired when a password is not present
-	ErrPasswordRequired = errors.New("models: password is required")
-	//ErrPasswordHashRequired when a password is not present
-	ErrPasswordHashRequired = errors.New("models: password hash not present")
 )
 
 // User is the model for a user
@@ -147,7 +125,9 @@ func NewUserService(connectionInfo string) (UserService, error) {
 type userValFunc func(*User) error
 
 func runUserValFuncs(user *User, fns ...userValFunc) error {
+	log.Println("validation ", fns)
 	for _, fn := range fns {
+		log.Println("validator err", fn)
 		if err := fn(user); err != nil {
 			return err
 		}
@@ -263,13 +243,16 @@ func (uv *userValidator) ByEmail(email string) (*User, error) {
 	user := User{
 		Email: email,
 	}
+	log.Println("uv.ByEmail")
 	err := runUserValFuncs(&user,
 		uv.normalizeEmail,
 		uv.emailFormat,
 	)
 	if err != nil {
+		log.Println("uv.ByEmail error")
 		return nil, err
 	}
+	log.Println("uv.ByEmail no error")
 	return &user, nil
 }
 
@@ -363,6 +346,7 @@ func (ug *userGorm) ByID(id uint) (*User, error) {
 func (ug *userGorm) ByEmail(email string) (*User, error) {
 	var user User
 
+	log.Println("us.ByEmail")
 	db := ug.db.Where("email = ?", email)
 	err := first(db, &user)
 
@@ -382,13 +366,18 @@ func (ug *userGorm) ByRemember(rememberHash string) (*User, error) {
 
 //Authenticate a user with provided email and password
 func (us *userService) Authenticate(email, password string) (*User, error) {
+	log.Println("inside Authenticate")
 	foundUser, err := us.ByEmail(email)
 	if err != nil {
+		log.Println("user not found:", email)
 		return nil, err
 	}
 
+	log.Println("foundUser", foundUser)
+
 	err = bcrypt.CompareHashAndPassword([]byte(foundUser.PasswordHash), []byte(password+userPwPepper))
 	if err != nil {
+		log.Println("compare hash error", err)
 		switch err {
 		case bcrypt.ErrMismatchedHashAndPassword:
 			return nil, ErrIncorrectPassword
