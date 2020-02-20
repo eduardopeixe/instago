@@ -51,17 +51,8 @@ type User struct {
 	RememberHash string `gorm:"not null,unique_index"`
 }
 
-func newUserValidator(udb UserDB, hmac hash.HMAC) *userValidator {
-	return &userValidator{
-		UserDB: udb,
-		hmac:   hmac,
-		// This is not the best design because the program could panic
-		// when creating a new UserValidator
-		// having this in the global scope would make panic at starting it
-		// the program
-		emailRegex: regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,16}$`),
-	}
-}
+// ensure that userValidator implements UserDB
+var _ UserDB = &userValidator{}
 
 type userValidator struct {
 	UserDB
@@ -114,6 +105,18 @@ type UserDB interface {
 }
 
 var _ UserDB = &userGorm{}
+
+func newUserValidator(udb UserDB, hmac hash.HMAC) *userValidator {
+	return &userValidator{
+		UserDB: udb,
+		hmac:   hmac,
+		// This is not the best design because the program could panic
+		// when creating a new UserValidator
+		// having this in the global scope would make panic at starting it
+		// the program
+		emailRegex: regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,16}$`),
+	}
+}
 
 func newuserGorm(connectionInfo string) (*userGorm, error) {
 	db, err := gorm.Open("postgres", connectionInfo)
