@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/eduardopeixe/instago/models"
@@ -29,14 +30,8 @@ type Users struct {
 
 // New creates a new user view
 func (u *Users) New(w http.ResponseWriter, r *http.Request) {
-	d := views.Data{
-		Alert: &views.Alert{
-			Level:   views.AlertLvlError,
-			Message: "this is an error message!!!",
-		},
-		Yield: "Hellow!!!",
-	}
-	err := u.NewView.Render(w, d)
+
+	err := u.NewView.Render(w, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -52,10 +47,19 @@ type SignupForm struct {
 // Create is used to process the signup form
 func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 
+	var vd views.Data
+
 	var form SignupForm
 	if err := parseForm(r, &form); err != nil {
-		panic(err)
+		log.Println(err)
+		vd.Alert = &views.Alert{
+			Level:   views.AlertLvlError,
+			Message: views.AlertMsgGeneric,
+		}
+		u.NewView.Render(w, vd)
+		return
 	}
+
 	user := models.User{
 		Name:     form.Name,
 		Email:    form.Email,
@@ -64,7 +68,11 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 
 	err := u.us.Create(&user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		vd.Alert = &views.Alert{
+			Level:   views.AlertLvlError,
+			Message: err.Error(),
+		}
+		u.NewView.Render(w, vd)
 		return
 	}
 	err = u.signIn(w, &user)
