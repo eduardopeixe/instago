@@ -30,11 +30,7 @@ type Users struct {
 
 // New creates a new user view
 func (u *Users) New(w http.ResponseWriter, r *http.Request) {
-
-	err := u.NewView.Render(w, nil)
-	if err != nil {
-		panic(err)
-	}
+	u.NewView.Render(w, nil)
 }
 
 // SignupForm is the model for signup form

@@ -34,9 +34,7 @@ type View struct {
 }
 
 func (v *View) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err := v.Render(w, nil); err != nil {
-		panic(err)
-	}
+	v.Render(w, nil)
 }
 
 // Render is used to render the view with predefined layout
@@ -49,7 +47,13 @@ func (v *View) Render(w http.ResponseWriter, data interface{}) error {
 			Yield: data,
 		}
 	}
-	return v.Template.ExecuteTemplate(w, v.Layout, data)
+	var buf *bytes.Buffer
+	err :=  v.Template.ExecuteTemplate(Buffer, v.Layout, data)
+	if err != nil{
+		http.Error(w, "Somenthing went really wrong", http.StatusInternalServerError)
+		return
+	}
+	io.Copy(w, &buf)
 }
 
 // layoutFile return a slice of strings representing the layout files
