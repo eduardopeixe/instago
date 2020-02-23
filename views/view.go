@@ -47,13 +47,14 @@ func (v *View) Render(w http.ResponseWriter, data interface{}) error {
 			Yield: data,
 		}
 	}
-	var buf *bytes.Buffer
-	err :=  v.Template.ExecuteTemplate(Buffer, v.Layout, data)
-	if err != nil{
-		http.Error(w, "Somenthing went really wrong", http.StatusInternalServerError)
-		return
-	}
-	io.Copy(w, &buf)
+	//TODO: Fix this
+	// var buf *bytes.Buffer
+	return v.Template.ExecuteTemplate(w, v.Layout, data)
+	// if err != nil{
+	// http.Error(w, "Somenthing went really wrong", http.StatusInternalServerError)
+	// return
+	// }
+	// io.Copy(w, &buf)
 }
 
 // layoutFile return a slice of strings representing the layout files
