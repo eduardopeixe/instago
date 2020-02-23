@@ -73,13 +73,6 @@ type UserDB interface {
 	Create(user *User) error
 	Update(user *User) error
 	Delete(id uint) error
-
-	//Used to close DB connection
-	Close() error
-
-	//Migration helpers
-	AutoMigrate() error
-	DestructiveReset()
 }
 
 var _ UserDB = &userGorm{}
@@ -400,24 +393,4 @@ func (ug *userGorm) Delete(id uint) error {
 	user := User{Model: gorm.Model{ID: id}}
 
 	return ug.db.Delete(&user).Error
-}
-
-// Close closes the user service database connection
-func (ug *userGorm) Close() error {
-	return ug.db.Close()
-}
-
-// DestructiveReset drop and recreate all database tables
-func (ug *userGorm) DestructiveReset() {
-	ug.db.DropTableIfExists(&User{})
-	ug.db.AutoMigrate(&User{})
-
-}
-
-// AutoMigrate migrates users table
-func (ug *userGorm) AutoMigrate() error {
-	if err := ug.db.AutoMigrate(&User{}).Error; err != nil {
-		return err
-	}
-	return nil
 }
