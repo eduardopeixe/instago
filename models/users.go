@@ -15,7 +15,7 @@ import (
 
 const (
 	userPwPepper  = "secret-instago-string"
-	hmacSecretKey = "secret-hmac-key"
+	hmacSecretKey = "secret-hmac-key-12345678901234567890"
 )
 
 // User is the model for a user
@@ -102,9 +102,7 @@ func NewUserService(db *gorm.DB) UserService {
 type userValFunc func(*User) error
 
 func runUserValFuncs(user *User, fns ...userValFunc) error {
-	log.Println("validation ", fns)
 	for _, fn := range fns {
-		log.Println("validator err", fn)
 		if err := fn(user); err != nil {
 			return err
 		}
@@ -154,7 +152,6 @@ func (uv *userValidator) hmacRemember(user *User) error {
 		return nil
 	}
 	user.RememberHash = uv.hmac.Hash(user.Remember)
-	user.Remember = ""
 	return nil
 }
 
@@ -220,17 +217,14 @@ func (uv *userValidator) ByEmail(email string) (*User, error) {
 	user := User{
 		Email: email,
 	}
-	log.Println("uv.ByEmail")
 	err := runUserValFuncs(&user,
 		uv.normalizeEmail,
 		uv.emailFormat,
 	)
 	if err != nil {
-		log.Println("uv.ByEmail error")
 		return nil, err
 	}
-	log.Println("uv.ByEmail no error")
-	return &user, nil
+	return uv.UserDB.ByEmail(email)
 }
 
 // ByRemember will hash the remeber token and then call ByRemember
@@ -240,10 +234,15 @@ func (uv *userValidator) ByRemember(token string) (*User, error) {
 		Remember: token,
 	}
 
+	log.Println("antes remember", user.Remember)
+	log.Println("antes token ", token)
+	log.Println("antes rememberHash", user.RememberHash)
 	err := runUserValFuncs(&user, uv.hmacRemember)
 	if err != nil {
 		return nil, err
 	}
+	log.Println("depois", user.RememberHash)
+
 	return uv.UserDB.ByRemember(user.RememberHash)
 
 }
@@ -323,7 +322,6 @@ func (ug *userGorm) ByID(id uint) (*User, error) {
 func (ug *userGorm) ByEmail(email string) (*User, error) {
 	var user User
 
-	log.Println("us.ByEmail")
 	db := ug.db.Where("email = ?", email)
 	err := first(db, &user)
 
@@ -343,18 +341,13 @@ func (ug *userGorm) ByRemember(rememberHash string) (*User, error) {
 
 //Authenticate a user with provided email and password
 func (us *userService) Authenticate(email, password string) (*User, error) {
-	log.Println("inside Authenticate")
 	foundUser, err := us.ByEmail(email)
 	if err != nil {
-		log.Println("user not found:", email)
 		return nil, err
 	}
 
-	log.Println("foundUser", foundUser)
-
 	err = bcrypt.CompareHashAndPassword([]byte(foundUser.PasswordHash), []byte(password+userPwPepper))
 	if err != nil {
-		log.Println("compare hash error", err)
 		switch err {
 		case bcrypt.ErrMismatchedHashAndPassword:
 			return nil, ErrIncorrectPassword

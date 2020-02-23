@@ -85,7 +85,6 @@ type LoginForm struct {
 // Login us used to verify te provided emai addresss and password are
 // valid to login
 func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
-	log.Println("aqui")
 	vd := views.Data{}
 	form := LoginForm{}
 	err := parseForm(r, &form)
@@ -95,7 +94,6 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 		u.LoginView.Render(w, vd)
 		return
 	}
-	log.Println("authenticate")
 	user, err := u.us.Authenticate(form.Email, form.Password)
 	if err != nil {
 		switch err {
@@ -107,7 +105,6 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 		u.LoginView.Render(w, vd)
 		return
 	}
-	log.Println("signin")
 	err = u.signIn(w, user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
