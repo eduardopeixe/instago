@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/eduardopeixe/instago/context"
 	"github.com/eduardopeixe/instago/models"
 )
 
@@ -30,7 +31,9 @@ func (mw *RequireUser) ApplyFn(next http.HandlerFunc) http.HandlerFunc {
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
-		// if user is logged in, just continue
+		ctx := r.Context()
+		ctx = context.WithUser(ctx, user)
+		r = r.WithContext(ctx)
 		log.Println("User found:", user)
 		next(w, r)
 	})
