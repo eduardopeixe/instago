@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"log"
 	"regexp"
 	"strings"
 
@@ -234,14 +233,10 @@ func (uv *userValidator) ByRemember(token string) (*User, error) {
 		Remember: token,
 	}
 
-	log.Println("antes remember", user.Remember)
-	log.Println("antes token ", token)
-	log.Println("antes rememberHash", user.RememberHash)
 	err := runUserValFuncs(&user, uv.hmacRemember)
 	if err != nil {
 		return nil, err
 	}
-	log.Println("depois", user.RememberHash)
 
 	return uv.UserDB.ByRemember(user.RememberHash)
 

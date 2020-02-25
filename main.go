@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/eduardopeixe/instago/controllers"
+	"github.com/eduardopeixe/instago/middleware"
 	"github.com/eduardopeixe/instago/models"
 	"github.com/gorilla/mux"
 )
@@ -34,6 +35,9 @@ func main() {
 	staticC := controllers.NewStatic()
 	usersC := controllers.NewUsers(services.User)
 	galleriesC := controllers.NewGallery(services.Gallery)
+	requireUserMw := middleware.RequireUser{
+		UserService: services.User,
+	}
 
 	r := mux.NewRouter()
 	r.Handle("/", staticC.Home).Methods("GET")
@@ -45,8 +49,9 @@ func main() {
 	r.HandleFunc("/cookietest", usersC.CookieTest).Methods("GET")
 
 	// Gallery routes
-	r.Handle("/galleries/new", galleriesC.New).Methods("GET")
-	r.HandleFunc("/galleries/create", galleriesC.Create).Methods("POST")
+
+	r.Handle("/galleries/new", requireUserMw.Apply(galleriesC.New)).Methods("GET")
+	r.HandleFunc("/galleries/create", requireUserMw.ApplyFn(galleriesC.Create)).Methods("POST")
 	fmt.Println("Serving port", 3000)
 	http.ListenAndServe(":3000", r)
 }
