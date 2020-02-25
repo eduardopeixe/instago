@@ -61,10 +61,8 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 
 	err := u.us.Create(&user)
 	if err != nil {
-		vd.Alert = &views.Alert{
-			Level:   views.AlertLvlError,
-			Message: err.Error(),
-		}
+		log.Println(err)
+		vd.SetAlert(err)
 		u.NewView.Render(w, vd)
 		return
 	}

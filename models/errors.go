@@ -1,12 +1,12 @@
 package models
 
-import "strings"
+import (
+	"strings"
+)
 
 var (
 	// ErrNotFound is a generic error for resource not found
 	ErrNotFound modelError = "models: resource not found"
-	// ErrInvalidID when an invalid ID is provided
-	ErrInvalidID modelError = "models: invalid ID"
 	// ErrInvalidEmail when an invalid email is provided
 	ErrInvalidEmail modelError = "models: invalid email address"
 	// ErrIncorrectPassword when a invalid password is provided
@@ -21,8 +21,14 @@ var (
 	ErrPasswordTooShort modelError = "models: password must be at least 8 characters long"
 	//ErrPasswordRequired when a password is not present
 	ErrPasswordRequired modelError = "models: password is required"
+	//ErrTitleRequired when a title is not provided
+	ErrTitleRequired modelError = "models: Title is required"
+	// ErrInvalidID when an invalid ID is provided
+	ErrInvalidID privateError = "models: invalid ID"
+	//ErrUserIDRequired when a userID is not present
+	ErrUserIDRequired privateError = "models: UserID is required"
 	//ErrPasswordHashRequired when a password is not present
-	ErrPasswordHashRequired modelError = "models: password hash not present"
+	ErrPasswordHashRequired privateError = "models: password hash not present"
 )
 
 type modelError string
@@ -36,4 +42,10 @@ func (e modelError) Public() string {
 	split := strings.Split(s, " ")
 	split[0] = strings.Title(split[0])
 	return strings.Join(split, " ")
+}
+
+type privateError string
+
+func (e privateError) Error() string {
+	return string(e)
 }

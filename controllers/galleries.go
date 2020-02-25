@@ -42,15 +42,16 @@ func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	gallery := models.Gallery{
-		Title: form.Title,
+		Title:  form.Title,
+		UserID: 1,
 	}
 
 	err := g.gs.Create(&gallery)
+	log.Println("setting error", err)
+
 	if err != nil {
-		vd.Alert = &views.Alert{
-			Level:   views.AlertLvlError,
-			Message: err.Error(),
-		}
+		log.Println(err)
+		vd.SetAlert(err)
 		g.New.Render(w, vd)
 		return
 	}
