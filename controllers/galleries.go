@@ -86,6 +86,37 @@ func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url.Path, http.StatusFound)
 }
 
+// Update POST /galleries/update
+func (g *Galleries) Update(w http.ResponseWriter, r *http.Request) {
+	gallery, err := g.galleryByID(w, r)
+	if err != nil {
+		return
+	}
+
+	user := context.User(r.Context())
+	if gallery.UserID != user.ID {
+		log.Println("Not owner")
+		http.Error(w, "You cannot edit this gallery", http.StatusNotFound)
+		return
+	}
+
+	var vd views.Data
+	vd.Yield = gallery
+
+	var form GalleryForm
+	err = parseForm(r, &form)
+	if err != nil {
+		log.Println(err)
+		vd.SetAlert(err)
+		g.EditView.Render(w, vd)
+		return
+	}
+
+	gallery.Title = form.Title
+	// g.gs.Update()
+	fmt.Fprintln(w, gallery)
+}
+
 func (g *Galleries) galleryByID(w http.ResponseWriter, r *http.Request) (*models.Gallery, error) {
 
 	vars := mux.Vars(r)
@@ -111,7 +142,7 @@ func (g *Galleries) galleryByID(w http.ResponseWriter, r *http.Request) (*models
 	return gallery, nil
 }
 
-// Edit POST /galleries/edit
+// Edit GET /galleries/edit
 func (g *Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 	gallery, err := g.galleryByID(w, r)
 	if err != nil {
@@ -127,5 +158,6 @@ func (g *Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 
 	var vd views.Data
 	vd.Yield = gallery
+
 	g.EditView.Render(w, vd)
 }
