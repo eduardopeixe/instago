@@ -86,6 +86,36 @@ func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url.Path, http.StatusFound)
 }
 
+func (g *Galleries) Delete(w http.ResponseWriter, r *http.Request) {
+	gallery, err := g.galleryByID(w, r)
+	if err != nil {
+		return
+	}
+
+	user := context.User(r.Context())
+	if gallery.UserID != user.ID {
+		log.Println("Not owner delete")
+		http.Error(w, "You cannont delete this gallery", http.StatusForbidden)
+		return
+	}
+
+	var vd views.Data
+	vd.Yield = gallery
+
+	err = g.gs.Delete(gallery.ID)
+	if err != nil {
+		log.Println(err)
+		vd.SetAlert(err)
+		g.EditView.Render(w, vd)
+		return
+	}
+
+	vd.AlertSuccess("Gallery deleted successfully")
+	//TODO: redirect to index gallery page
+	fmt.Fprintln(w, "deleted")
+
+}
+
 // Update POST /galleries/update
 func (g *Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	gallery, err := g.galleryByID(w, r)
@@ -95,8 +125,8 @@ func (g *Galleries) Update(w http.ResponseWriter, r *http.Request) {
 
 	user := context.User(r.Context())
 	if gallery.UserID != user.ID {
-		log.Println("Not owner")
-		http.Error(w, "You cannot edit this gallery", http.StatusNotFound)
+		log.Println("Not owner update")
+		http.Error(w, "You cannot edit this gallery", http.StatusForbidden)
 		return
 	}
 
