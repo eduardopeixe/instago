@@ -36,6 +36,13 @@ func (d *Data) SetAlert(err error) {
 	}
 }
 
+func (d *Data) AlertSuccess(msg string) {
+	d.Alert = &Alert{
+		Level:   AlertLvlSuccess,
+		Message: msg,
+	}
+}
+
 func (d *Data) AlertError(msg string) {
 	d.Alert = &Alert{
 		Level:   AlertLvlError,

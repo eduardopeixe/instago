@@ -113,8 +113,16 @@ func (g *Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	gallery.Title = form.Title
-	// g.gs.Update()
-	fmt.Fprintln(w, gallery)
+	err = g.gs.Update(gallery)
+	if err != nil {
+		log.Println(err)
+		vd.SetAlert(err)
+		g.EditView.Render(w, vd)
+		return
+	}
+
+	vd.AlertSuccess("Gallery updated successfully")
+	g.ShowView.Render(w, vd)
 }
 
 func (g *Galleries) galleryByID(w http.ResponseWriter, r *http.Request) (*models.Gallery, error) {
