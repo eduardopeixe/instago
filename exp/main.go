@@ -61,6 +61,5 @@ func main() {
 	}
 
 	userByID, err = us.ByID(user.ID)
-	fmt.Println("User delete", err)
 
 }
