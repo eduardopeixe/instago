@@ -15,21 +15,23 @@ import (
 // NewGallery creates a new Gallery controller.
 func NewGallery(gs models.GalleryService, r *mux.Router) *Galleries {
 	return &Galleries{
-		New:      views.NewView("bootstrap", "galleries/new"),
-		ShowView: views.NewView("bootstrap", "galleries/show"),
-		EditView: views.NewView("bootstrap", "galleries/edit"),
-		gs:       gs,
-		r:        r,
+		New:       views.NewView("bootstrap", "galleries/new"),
+		ShowView:  views.NewView("bootstrap", "galleries/show"),
+		EditView:  views.NewView("bootstrap", "galleries/edit"),
+		IndexView: views.NewView("bootstrap", "galleries/index"),
+		gs:        gs,
+		r:         r,
 	}
 }
 
 // Galleries is the type of Gallery
 type Galleries struct {
-	New      *views.View
-	ShowView *views.View
-	EditView *views.View
-	gs       models.GalleryService
-	r        *mux.Router
+	New       *views.View
+	ShowView  *views.View
+	EditView  *views.View
+	IndexView *views.View
+	gs        models.GalleryService
+	r         *mux.Router
 }
 
 // GalleryForm is the model for Gallery
@@ -37,6 +39,7 @@ type GalleryForm struct {
 	Title string `json:"title"`
 }
 
+// Show displays a gallery
 func (g *Galleries) Show(w http.ResponseWriter, r *http.Request) {
 	gallery, err := g.galleryByID(w, r)
 	if err != nil {
@@ -86,6 +89,7 @@ func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url.Path, http.StatusFound)
 }
 
+// Delete deletes a gallery by gallery ID
 func (g *Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 	gallery, err := g.galleryByID(w, r)
 	if err != nil {
@@ -113,7 +117,6 @@ func (g *Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 	vd.AlertSuccess("Gallery deleted successfully")
 	//TODO: redirect to index gallery page
 	fmt.Fprintln(w, "deleted")
-
 }
 
 // Update POST /galleries/update
@@ -155,6 +158,7 @@ func (g *Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	g.ShowView.Render(w, vd)
 }
 
+// galleryByID returns a gallery that matches the param ID
 func (g *Galleries) galleryByID(w http.ResponseWriter, r *http.Request) (*models.Gallery, error) {
 
 	vars := mux.Vars(r)
@@ -198,4 +202,23 @@ func (g *Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 	vd.Yield = gallery
 
 	g.EditView.Render(w, vd)
+}
+
+// Index GET /galleries
+func (g *Galleries) Index(w http.ResponseWriter, r *http.Request) {
+
+	user := context.User(r.Context())
+
+	galleries, err := g.gs.ByUserID(user.ID)
+	if err != nil {
+		log.Println("Not owner")
+		http.Error(w, "Cannot load galleries", http.StatusNotFound)
+		return
+	}
+
+	var vd views.Data
+	vd.Yield = galleries
+
+	g.IndexView.Render(w, vd)
+	// fmt.Fprintln(w, galleries)
 }

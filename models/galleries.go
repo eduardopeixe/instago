@@ -18,8 +18,9 @@ type GalleryService interface {
 type GalleryDB interface {
 	Create(gallery *Gallery) error
 	Update(gallery *Gallery) error
-	Delete(galleryID uint) error
+	Delete(id uint) error
 	ByID(id uint) (*Gallery, error)
+	ByUserID(userID uint) ([]Gallery, error)
 }
 
 type galleryGorm struct {
@@ -56,9 +57,13 @@ func (gg *galleryGorm) ByID(id uint) (*Gallery, error) {
 	db := gg.db.Where("id = ?", id)
 	err := first(db, &gallery)
 	return &gallery, err
-
 }
+func (gg *galleryGorm) ByUserID(userID uint) ([]Gallery, error) {
+	var galleries []Gallery
+	gg.db.Where("user_id = ?", userID).Find(&galleries)
 
+	return galleries, nil
+}
 func (gv *galleryValidator) Create(gallery *Gallery) error {
 	err := runGalleryValFuncs(gallery,
 		gv.userIDRequired,
@@ -68,7 +73,6 @@ func (gv *galleryValidator) Create(gallery *Gallery) error {
 	}
 	return gv.GalleryDB.Create(gallery)
 }
-
 func (gv *galleryValidator) Update(gallery *Gallery) error {
 	err := runGalleryValFuncs(gallery,
 		gv.userIDRequired,
@@ -79,10 +83,9 @@ func (gv *galleryValidator) Update(gallery *Gallery) error {
 	}
 	return gv.GalleryDB.Update(gallery)
 }
-
-func (gv *galleryValidator) Delete(galleryID uint) error {
+func (gv *galleryValidator) Delete(id uint) error {
 	var gallery Gallery
-	gallery.ID = galleryID
+	gallery.ID = id
 
 	err := runGalleryValFuncs(&gallery,
 		gv.IDGreaterThanZero,
@@ -91,24 +94,20 @@ func (gv *galleryValidator) Delete(galleryID uint) error {
 		return err
 	}
 
-	return gv.GalleryDB.Delete(galleryID)
-
+	return gv.GalleryDB.Delete(id)
 }
-
 func (gv *galleryValidator) IDGreaterThanZero(g *Gallery) error {
 	if g.ID <= 0 {
 		return ErrInvalidID
 	}
 	return nil
 }
-
 func (gv *galleryValidator) userIDRequired(g *Gallery) error {
 	if g.UserID <= 0 {
 		return ErrUserIDRequired
 	}
 	return nil
 }
-
 func (gv *galleryValidator) titleRequired(g *Gallery) error {
 	if g.Title == "" {
 		return ErrTitleRequired
@@ -121,12 +120,10 @@ var _ GalleryDB = &galleryGorm{}
 func (gg *galleryGorm) Create(gallery *Gallery) error {
 	return gg.db.Create(gallery).Error
 }
-
 func (gg *galleryGorm) Update(gallery *Gallery) error {
 	return gg.db.Save(gallery).Error
 }
-
-func (gg *galleryGorm) Delete(galleryID uint) error {
-	gallery := Gallery{Model: gorm.Model{ID: galleryID}}
+func (gg *galleryGorm) Delete(id uint) error {
+	gallery := Gallery{Model: gorm.Model{ID: id}}
 	return gg.db.Delete(gallery).Error
 }
