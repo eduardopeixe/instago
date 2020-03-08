@@ -36,8 +36,12 @@ func main() {
 	staticC := controllers.NewStatic()
 	usersC := controllers.NewUsers(services.User)
 	galleriesC := controllers.NewGallery(services.Gallery, r)
-	requireUserMw := middleware.RequireUser{
+
+	userMw := middleware.User{
 		UserService: services.User,
+	}
+	requireUserMw := middleware.RequireUser{
+		User: userMw,
 	}
 
 	r.Handle("/", staticC.Home).Methods("GET")
@@ -58,7 +62,7 @@ func main() {
 	r.HandleFunc("/galleries/{id:[0-9]+}/update", requireUserMw.ApplyFn(galleriesC.Update)).Methods("POST").Name("update_gallery")
 	r.HandleFunc("/galleries/{id:[0-9]+}/delete", requireUserMw.ApplyFn(galleriesC.Delete)).Methods("POST").Name("delete_gallery")
 	fmt.Println("Serving port", 3000)
-	http.ListenAndServe(":3000", r)
+	http.ListenAndServe(":3000", userMw.Apply(r))
 }
 
 func must(err error) {

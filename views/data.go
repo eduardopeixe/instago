@@ -1,5 +1,7 @@
 package views
 
+import "github.com/eduardopeixe/instago/models"
+
 const (
 	AlertLvlError   = "danger"
 	AlertLvlWarning = "warning"
@@ -18,6 +20,7 @@ type Alert struct {
 // Data is the top level struct that views expect data to come in
 type Data struct {
 	Alert *Alert
+	User  *models.User
 	Yield interface{}
 }
 
