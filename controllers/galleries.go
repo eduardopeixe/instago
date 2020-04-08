@@ -2,14 +2,20 @@ package controllers
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/eduardopeixe/instago/context"
 	"github.com/eduardopeixe/instago/models"
 	"github.com/eduardopeixe/instago/views"
 	"github.com/gorilla/mux"
+)
+
+const (
+	maxMemory = 1 << 20 // 1 Megabyte
 )
 
 // NewGallery creates a new Gallery controller.
@@ -221,4 +227,67 @@ func (g *Galleries) Index(w http.ResponseWriter, r *http.Request) {
 
 	g.IndexView.Render(w, r, vd)
 	// fmt.Fprintln(w, galleries)
+}
+
+// ImageUpload POST /galleries/images
+func (g *Galleries) ImageUpload(w http.ResponseWriter, r *http.Request) {
+	gallery, err := g.galleryByID(w, r)
+	if err != nil {
+		return
+	}
+
+	user := context.User(r.Context())
+	if gallery.UserID != user.ID {
+		log.Println("Not owner update")
+		http.Error(w, "You cannot edit this gallery", http.StatusForbidden)
+		return
+	}
+
+	var vd views.Data
+	vd.Yield = gallery
+
+	//TODO: Parse a multipart form
+	err = r.ParseMultipartForm(maxMemory)
+	if err != nil {
+		vd.SetAlert(err)
+		g.EditView.Render(w, r, vd)
+		return
+	}
+
+	galleryPath := fmt.Sprintf("images/galleries/%v/", gallery.ID)
+	err = os.MkdirAll(galleryPath, 0755)
+	if err != nil {
+		vd.SetAlert(err)
+		g.EditView.Render(w, r, vd)
+		return
+	}
+
+	files := r.MultipartForm.File["images"]
+	for _, f := range files {
+		file, err := f.Open()
+		if err != nil {
+			vd.SetAlert(err)
+			g.EditView.Render(w, r, vd)
+			return
+		}
+		defer file.Close()
+
+		dst, err := os.Create(galleryPath + f.Filename)
+		if err != nil {
+			vd.SetAlert(err)
+			g.EditView.Render(w, r, vd)
+			return
+		}
+		defer dst.Close()
+
+		_, err = io.Copy(dst, file)
+		if err != nil {
+			vd.SetAlert(err)
+			g.EditView.Render(w, r, vd)
+			return
+		}
+
+		fmt.Sprintf("Image upload successfully %s", galleryPath+f.Filename)
+	}
+
 }
