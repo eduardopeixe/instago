@@ -2,10 +2,8 @@ package controllers
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/eduardopeixe/instago/context"
@@ -19,13 +17,14 @@ const (
 )
 
 // NewGallery creates a new Gallery controller.
-func NewGallery(gs models.GalleryService, r *mux.Router) *Galleries {
+func NewGallery(gs models.GalleryService, is models.ImageService, *mux.Router) *Galleries {
 	return &Galleries{
 		New:       views.NewView("bootstrap", "galleries/new"),
 		ShowView:  views.NewView("bootstrap", "galleries/show"),
 		EditView:  views.NewView("bootstrap", "galleries/edit"),
 		IndexView: views.NewView("bootstrap", "galleries/index"),
 		gs:        gs,
+		is:        is,
 		r:         r,
 	}
 }
@@ -37,6 +36,7 @@ type Galleries struct {
 	EditView  *views.View
 	IndexView *views.View
 	gs        models.GalleryService
+	is        models.ImageService
 	r         *mux.Router
 }
 
@@ -246,16 +246,7 @@ func (g *Galleries) ImageUpload(w http.ResponseWriter, r *http.Request) {
 	var vd views.Data
 	vd.Yield = gallery
 
-	//TODO: Parse a multipart form
 	err = r.ParseMultipartForm(maxMemory)
-	if err != nil {
-		vd.SetAlert(err)
-		g.EditView.Render(w, r, vd)
-		return
-	}
-
-	galleryPath := fmt.Sprintf("images/galleries/%v/", gallery.ID)
-	err = os.MkdirAll(galleryPath, 0755)
 	if err != nil {
 		vd.SetAlert(err)
 		g.EditView.Render(w, r, vd)
@@ -272,22 +263,14 @@ func (g *Galleries) ImageUpload(w http.ResponseWriter, r *http.Request) {
 		}
 		defer file.Close()
 
-		dst, err := os.Create(galleryPath + f.Filename)
-		if err != nil {
-			vd.SetAlert(err)
-			g.EditView.Render(w, r, vd)
-			return
-		}
-		defer dst.Close()
-
-		_, err = io.Copy(dst, file)
+		err = g.is.Create(gallery.ID, file, f.Filename)
 		if err != nil {
 			vd.SetAlert(err)
 			g.EditView.Render(w, r, vd)
 			return
 		}
 
-		fmt.Sprintf("Image upload successfully %s", galleryPath+f.Filename)
+			fmt.Fprintln("Image upload successfully %s", galleryPath+f.Filename)
 	}
 
 }
